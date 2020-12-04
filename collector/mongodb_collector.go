@@ -34,13 +34,14 @@ const namespace = "mongodb"
 
 // MongodbCollectorOpts is the options of the mongodb collector.
 type MongodbCollectorOpts struct {
-	URI                      string
-	CollectDatabaseMetrics   bool
-	CollectCollectionMetrics bool
-	CollectTopMetrics        bool
-	CollectIndexUsageStats   bool
-	CollectConnPoolStats     bool
-	SuppressCollectShardingStatus    bool
+	URI                           string
+	CollectDatabaseMetrics        bool
+	CollectCollectionMetrics      bool
+	CollectTopMetrics             bool
+	CollectIndexUsageStats        bool
+	CollectConnPoolStats          bool
+	SuppressCollectShardingStatus bool
+	ForceNodeType                 string
 }
 
 func (in *MongodbCollectorOpts) toSessionOps() *shared.MongoSessionOpts {
@@ -199,11 +200,13 @@ func (exporter *MongodbCollector) scrape(ch chan<- prometheus.Metric) {
 	}
 	exporter.mongoUp.Set(1)
 
-	var nodeType string
-	nodeType, err = shared.MongoSessionNodeType(mongoSess)
-	if err != nil {
-		log.Errorf("Problem gathering the mongo node type: %s", err)
-		return
+	nodeType := exporter.Opts.ForceNodeType
+	if len(nodeType) == 0 {
+		nodeType, err = shared.MongoSessionNodeType(mongoSess)
+		if err != nil {
+			log.Errorf("Problem gathering the mongo node type: %s", err)
+			return
+		}
 	}
 
 	log.Debugf("Connected to: %s (node type: %s, server version: %s)", shared.RedactMongoUri(exporter.Opts.URI), nodeType, serverVersion)
@@ -227,7 +230,7 @@ func (exporter *MongodbCollector) collectMongos(client *mongo.Client, ch chan<- 
 		serverStatus.Export(ch)
 	}
 
-	if !exporter.Opts.SuppressCollectShardingStatus  {
+	if !exporter.Opts.SuppressCollectShardingStatus {
 		log.Debug("Collecting Sharding Status")
 		shardingStatus := mongos.GetShardingStatus(client)
 		if shardingStatus != nil {
