@@ -25,7 +25,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
 )
 
@@ -60,7 +59,7 @@ func MongoClient(opts *MongoSessionOpts) *mongo.Client {
 	cOpts := options.Client().
 		ApplyURI(opts.URI).
 		SetDirect(true).
-		SetReadPreference(readpref.Nearest()).
+		// SetReadPreference(readpref.Nearest()). -> use readPrefence=primary/secondary in uri
 		SetAppName("mongodb_exporter")
 
 	client, err := mongo.NewClient(cOpts)
